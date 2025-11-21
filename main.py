@@ -54,10 +54,16 @@ def main():
             action = agent.decide_action(game_state)
             
             # --- 4. Control (Action) ---
-            # For MVP, we just print the action and simulate a key press
-            # In real game, we would check if we actually need to change direction
             if config.DEBUG_MODE:
-                # Draw on frame for debugging
+                # Draw detections
+                if detections['pacman']:
+                    x, y, w, h = detections['pacman']
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 255), 2)
+                    cv2.putText(frame, "PAC", (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+                
+                for (x, y, w, h) in detections['ghosts']:
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)
+
                 cv2.putText(frame, f"Action: {action}", (10, 30), 
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
@@ -65,9 +71,28 @@ def main():
             
             # --- 5. Visualization ---
             if config.SHOW_CV_WINDOW:
-                cv2.imshow("Pac-Man AI Vision", frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                window_name = "Pac-Man AI Vision"
+                # Create window if it doesn't exist (implicitly handled by imshow, but needed for moveWindow)
+                # We do this once or check if it's the first frame
+                cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+                
+                # Move window only once to avoid fighting user (hacky check)
+                if 'window_moved' not in locals():
+                    cv2.moveWindow(window_name, config.CV_WINDOW_POSITION[0], config.CV_WINDOW_POSITION[1])
+                    if config.CV_WINDOW_SIZE:
+                        cv2.resizeWindow(window_name, config.CV_WINDOW_SIZE[0], config.CV_WINDOW_SIZE[1])
+                    window_moved = True
+
+                cv2.imshow(window_name, frame)
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord('q'):
                     break
+                elif key == ord('s'):
+                    # Save snapshot for template creation
+                    timestamp = int(time.time())
+                    filename = f"assets/templates/snapshot_{timestamp}.png"
+                    cv2.imwrite(filename, frame)
+                    print(f"Snapshot saved to {filename}")
             
             # --- 6. FPS Control ---
             loop_end = time.time()
