@@ -48,7 +48,7 @@ def main():
             # --- 2. Vision (Detection & State) ---
             # TODO: In the future, we might skip detection on some frames for performance
             detections = detector.detect_objects(frame)
-            game_state = estimator.update(detections)
+            game_state = estimator.update(detections, frame)
             
             # --- 3. Agent (Decision) ---
             action = agent.decide_action(game_state)
@@ -56,10 +56,49 @@ def main():
             # --- 4. Control (Action) ---
             if config.DEBUG_MODE:
                 # Draw detections
-                if detections['pacman']:
-                    x, y, w, h = detections['pacman']
+                for (x, y, w, h) in detections['pacman']:
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 255), 2)
                     cv2.putText(frame, "PAC", (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+                
+                if game_state['pacman_pos']:
+                    gx, gy = game_state['pacman_pos']
+                    cv2.putText(frame, f"Grid: ({gx}, {gy})", (10, 60), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                    
+                    # Draw local grid for verification
+                    # Draw a small circle on the center of the current grid cell
+                    h, w = frame.shape[:2]
+                    gw, gh = config.GRID_SIZE
+                    pad = getattr(config, 'GRID_PADDING', {'top': 0, 'bottom': 0, 'left': 0, 'right': 0})
+                    
+                    eff_w = w - pad['left'] - pad['right']
+                    eff_h = h - pad['top'] - pad['bottom']
+                    
+                    if eff_w > 0 and eff_h > 0:
+                        cell_w = eff_w / gw
+                        cell_h = eff_h / gh
+                        
+                        cx = int(pad['left'] + (gx + 0.5) * cell_w)
+                        cy = int(pad['top'] + (gy + 0.5) * cell_h)
+                        cv2.circle(frame, (cx, cy), 5, (0, 0, 255), -1)
+                        
+                        # Draw walls (ALL of them for debug)
+                        grid = game_state['grid']
+                        
+                        # Draw Grid Lines for alignment check
+                        for c in range(gw + 1): # Vertical lines
+                            x = int(pad['left'] + c * cell_w)
+                            cv2.line(frame, (x, pad['top']), (x, h - pad['bottom']), (50, 50, 50), 1)
+                        for r in range(gh + 1): # Horizontal lines
+                            y = int(pad['top'] + r * cell_h)
+                            cv2.line(frame, (pad['left'], y), (w - pad['right'], y), (50, 50, 50), 1)
+
+                        for r in range(gh):
+                            for c in range(gw):
+                                if grid[r, c] == 1:
+                                    wx = int(pad['left'] + c * cell_w)
+                                    wy = int(pad['top'] + r * cell_h)
+                                    cv2.rectangle(frame, (wx, wy), (int(wx+cell_w), int(wy+cell_h)), (0, 0, 100), 1)
                 
                 for (x, y, w, h) in detections['ghosts']:
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)

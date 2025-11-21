@@ -46,10 +46,8 @@ class ObjectDetectorCV:
 
         # 1. Detect Pac-Man
         if 'pacman' in self.templates:
-            pacman_loc = self._match_template(frame, self.templates['pacman'], threshold=0.7)
-            if pacman_loc:
-                # Take the best match
-                results['pacman'] = pacman_loc[0]
+            pacman_locs = self._match_template(frame, self.templates['pacman'], threshold=0.7)
+            results['pacman'] = pacman_locs
 
         # 2. Detect Ghosts (if template exists)
         if 'ghost' in self.templates:
