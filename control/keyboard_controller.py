@@ -19,24 +19,30 @@ class KeyboardController:
 
     def press_key(self, key_name: str, duration: float = 0.05):
         """
-        Press and release a key.
-        
-        Args:
-            key_name: One of 'UP', 'DOWN', 'LEFT', 'RIGHT'.
-            duration: How long to hold the key.
+        Simulate a key press.
         """
         if key_name not in self.key_map:
             print(f"Warning: Key {key_name} not in key map.")
             return
-
-        key = self.key_map[key_name]
+            
+        key_char = self.key_map[key_name]
         
         try:
-            self.keyboard.press(key)
+            k = key_char
+            self.keyboard.press(k)
             time.sleep(duration)
-            self.keyboard.release(key)
+            self.keyboard.release(k)
+            
         except Exception as e:
-            print(f"Error sending key {key_name}: {e}")
+            print(f"Error pressing key: {e}")
+
+    def execute_action(self, action: str):
+        """
+        Execute the action decided by the agent.
+        Wrapper around press_key.
+        """
+        if action and action != 'STOP':
+            self.press_key(action)
 
     def emergency_stop(self):
         """Stops all active inputs (if we were holding state, which we aren't currently)."""

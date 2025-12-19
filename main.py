@@ -18,21 +18,44 @@ from control.keyboard_controller import KeyboardController
 from vision.object_detection_cv import ObjectDetectorCV
 from vision.state_estimator import StateEstimator
 from agent.policy_simple import SimplePolicyAgent
+from utils.data_logger import DataLogger
 
 def main():
     print("Initializing Pac-Man AI Agent...")
     
-    # 1. Initialize Modules
+    # Initialize modules
     capturer = ScreenCapturer(region=config.CAPTURE_REGION)
-    controller = KeyboardController()
-    detector = ObjectDetectorCV()
+    detector = ObjectDetectorCV(template_dir=config.TEMPLATE_DIR)
     estimator = StateEstimator()
+    controller = KeyboardController()
     agent = SimplePolicyAgent()
+    logger = DataLogger()
     
-    print(f"Target FPS: {config.TARGET_FPS}")
-    print("Press Ctrl+C to stop.")
+    # --- Mapping Phase ---
+    print("--- MAPPING PHASE ---")
+    print("Please ensure the game is visible and running.")
+    print("Do NOT move the window.")
+    time.sleep(1) # Give user a sec
     
+    from vision.map_extractor import MapExtractor
+    map_extractor = MapExtractor()
+    map_extractor.capture_frames(capturer, duration=3.0)
+    clean_map = map_extractor.extract_clean_map()
+    
+    if clean_map is not None:
+        print("Map extracted successfully!")
+        estimator.initialize_from_map(clean_map)
+        # Save it for debug
+        import cv2
+        cv2.imwrite("logs/clean_map_debug.png", clean_map)
+    else:
+        print("WARNING: Map extraction failed. Using dynamic updates.")
+
+    print(f"Starting Pac-Man AI Agent... (Target FPS: {config.TARGET_FPS})")
+    print("Press 'q' to quit. Press 's' to save a snapshot.")
+
     frame_duration = 1.0 / config.TARGET_FPS
+    last_time = time.time()
     
     try:
         while True:
@@ -40,9 +63,9 @@ def main():
             
             # --- 1. Capture ---
             frame = capturer.capture()
-            
             if frame is None:
                 print("Failed to capture frame.")
+                time.sleep(0.1)
                 continue
 
             # --- 2. Vision (Detection & State) ---
@@ -54,6 +77,14 @@ def main():
             action = agent.decide_action(game_state)
             
             # --- 4. Control (Action) ---
+            controller.execute_action(action)
+            
+            # --- 5. Logging ---
+            if config.ENABLE_LOGGING:
+                # Check for interesting events (e.g., ghost detected)
+                metadata = {"interesting": len(detections.get('ghosts', [])) > 0}
+                logger.log_step(frame, game_state, action, metadata)
+
             if config.DEBUG_MODE:
                 # Draw detections
                 for (x, y, w, h) in detections['pacman']:
@@ -99,12 +130,29 @@ def main():
                                     wx = int(pad['left'] + c * cell_w)
                                     wy = int(pad['top'] + r * cell_h)
                                     cv2.rectangle(frame, (wx, wy), (int(wx+cell_w), int(wy+cell_h)), (0, 0, 100), 1)
+                                elif grid[r, c] == 2: # Pellet
+                                    cx = int(pad['left'] + (c + 0.5) * cell_w)
+                                    cy = int(pad['top'] + (r + 0.5) * cell_h)
+                                    # Draw larger Green circle for visibility
+                                    cv2.circle(frame, (cx, cy), 4, (0, 255, 0), -1)
                 
                 for (x, y, w, h) in detections['ghosts']:
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)
 
-                cv2.putText(frame, f"Action: {action}", (10, 30), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                # HUD: Pellet Stats
+                total = game_state.get('pellets_total', 0)
+                remaining = game_state.get('pellets_remaining', 0)
+                eaten = game_state.get('pellets_eaten', 0)
+                
+                hud_text = [
+                    f"Action: {action}",
+                    f"Pellets: {remaining}/{total}",
+                    f"Eaten: {eaten}"
+                ]
+                
+                for i, line in enumerate(hud_text):
+                    cv2.putText(frame, line, (10, 30 + i*30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             
             controller.press_key(action, duration=config.KEY_PRESS_DURATION)
             

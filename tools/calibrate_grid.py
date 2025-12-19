@@ -40,7 +40,8 @@ def main():
     print("  ENTER : Save and Exit")
     print("  ESC   : Cancel")
 
-    cap = ScreenCapturer()
+    # Use the calibrated game region
+    cap = ScreenCapturer(region=config.CAPTURE_REGION)
     
     # Load initial padding
     pad = config.GRID_PADDING.copy()

@@ -4,7 +4,7 @@
 # Region of the screen to capture.
 # format: {'top': int, 'left': int, 'width': int, 'height': int}
 # Calibrated by user
-CAPTURE_REGION = {'top': 159, 'left': 953, 'width': 959, 'height': 446}
+CAPTURE_REGION = {'top': 158, 'left': 944, 'width': 969, 'height': 498}
 
 # Target Frames Per Second for the main loop
 TARGET_FPS = 30
@@ -33,7 +33,7 @@ MATCH_THRESHOLD = 0.8
 DEBUG_MODE = True
 SHOW_CV_WINDOW = True  # Show the computer vision view window
 # Position of the CV window on screen (x, y)
-CV_WINDOW_POSITION = (53, 52)
+CV_WINDOW_POSITION = (4, 145)
 # Size of the CV window (width, height) - None means auto-size
 CV_WINDOW_SIZE = (600, 400)
 
@@ -43,9 +43,10 @@ GRID_SIZE = (28, 31)
 
 # Grid Padding (pixels to shave off the capture region before gridding)
 # Useful if the capture includes borders or headers
-GRID_PADDING = {'top': 0, 'bottom': 0, 'left': 0, 'right': 0}
+GRID_PADDING = {'top': 77, 'bottom': 142, 'left': 20, 'right': 12}
 
 LOG_LEVEL = 'INFO'
+ENABLE_LOGGING = False # Set to True to collect training data
 
 # --- Google AI ---
 # API Key for Gemini (Load from environment variable)
@@ -75,5 +76,12 @@ GAME_COLORS = {
         (204, 123, 255),# #ff7bcc
         (255, 255, 0),  # #00ffff (Cyan) -> BGR(255, 255, 0)
         (0, 0, 255)     # #ff0000 (Red) -> BGR(0, 0, 255)
+    ],
+    'PELLETS': [
+        (116, 138, 215), # #D78A74 (Salmon) -> BGR
+        (48, 57, 89)     # #593930 (Shadow/Gradient) -> BGR
+    ],
+    'BONUS': [
+        (143, 170, 255)  # #FFAA8F -> BGR
     ]
 }

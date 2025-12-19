@@ -10,7 +10,8 @@ class ObjectDetectorCV:
     Uses template matching and color segmentation.
     """
     
-    def __init__(self):
+    def __init__(self, template_dir: str = 'assets/templates'):
+        self.template_dir = template_dir
         self.templates = {}
         self.load_templates()
         
